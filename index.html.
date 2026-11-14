@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101827">
+<title>Training Load Tracker</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#131e30;--panel2:#1b2940;--text:#edf3fc;--muted:#a7b5ca;--line:#2a3a53;--blue:#60a5fa;--green:#4ade80;--amber:#fbbf24;--red:#fb7185}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:env(safe-area-inset-top) 14px calc(24px + env(safe-area-inset-bottom))}
+main{max-width:760px;margin:auto}.top{padding:22px 4px 12px}.eyebrow{color:var(--muted);font-size:12px;letter-spacing:.12em;text-transform:uppercase}.top h1{font-size:27px;margin:7px 0}.sub{color:var(--muted);font-size:14px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:15px 0}.metric,.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px}.metric{padding:13px 10px}.metric small{color:var(--muted);font-size:12px}.metric strong{display:block;font-size:27px;margin:5px 0}.metric span{font-size:11px;color:var(--muted)}.blue{color:var(--blue)}.green{color:var(--green)}.amber{color:var(--amber)}
+.panel{padding:16px;margin:12px 0}.panel h2{font-size:18px;margin:0 0 14px}label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}input,select{width:100%;border:1px solid var(--line);border-radius:10px;background:#0d1727;color:var(--text);padding:12px;font-size:16px;min-height:46px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.seg{display:flex;gap:8px}.seg button{flex:1}.btn{border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:12px 14px;border-radius:10px;font-size:15px;font-weight:600;min-height:44px}.btn.primary{background:#1d4ed8;border-color:#2563eb}.btn.danger{color:#fecaca}.btn:active{opacity:.75}.rangeRow{display:flex;justify-content:space-between;align-items:center}.rangeRow strong{font-size:23px}.range{width:100%;accent-color:var(--blue);padding:0;min-height:30px}.loadbox{background:var(--panel2);border-radius:12px;padding:12px;margin:14px 0;display:flex;justify-content:space-between;align-items:center}.loadbox strong{font-size:25px}.muted{color:var(--muted);font-size:12px;line-height:1.45}.actions{display:flex;flex-wrap:wrap;gap:8px}.actions .btn{flex:1}.entry{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}.entry:last-child{border:0}.entryInfo{flex:1;min-width:0}.entryInfo b{display:block}.entryInfo small{color:var(--muted)}.entryLoad{font-weight:700;min-width:42px;text-align:right}.mini{padding:7px 9px;min-height:34px;font-size:12px}.barwrap{height:9px;background:#26364d;border-radius:9px;overflow:hidden;margin-top:5px}.bar{height:100%;background:var(--blue);border-radius:9px}.empty{color:var(--muted);text-align:center;padding:20px 8px}.notice{background:#17283a;border:1px solid #29415c;border-radius:12px;padding:12px;color:#c9d8eb;font-size:13px;line-height:1.5}.hidden{display:none!important}
+@media(max-width:390px){.metric strong{font-size:23px}.cards{gap:6px}.metric{padding:11px 8px}}
+</style>
+</head>
+<body>
+<main>
+<header class="top">
+<div class="eyebrow">Training • Fitness • Fatigue • Freshness</div>
+<h1>ATL / CTL / TSB Tracker</h1>
+<div class="sub">Session RPE × duration · Weightlifting + cardio</div>
+</header>
+
+<section class="cards">
+<div class="metric"><small>ATL · 7 days</small><strong class="blue" id="atl">0</strong><span>Acute load</span></div>
+<div class="metric"><small>CTL · 42 days</small><strong class="green" id="ctl">0</strong><span>Chronic load</span></div>
+<div class="metric"><small>TSB</small><strong class="amber" id="tsb">0</strong><span>CTL − ATL</span></div>
+</section>
+<div class="muted" id="coverage">Add your workouts to begin. Rest days are automatically counted as zero.</div>
+
+<section class="panel">
+<h2 id="formTitle">Add a workout</h2>
+<div class="grid2">
+<div><label for="date">Workout date</label><input id="date" type="date"></div>
+<div><label for="kind">Workout type</label><select id="kind"><option>Weightlifting</option><option>Cardio</option></select></div>
+</div>
+<div class="grid2">
+<div><label for="duration">Duration (minutes)</label><input id="duration" type="number" min="1" step="1" inputmode="numeric" placeholder="45"></div>
+<div><label for="rpe">Session RPE (1–10)</label><div class="rangeRow"><strong id="rpeValue">5.0</strong><span class="muted">Overall effort</span></div><input class="range" id="rpe" type="range" min="1" max="10" step=".5" value="5"></div>
+</div>
+<div class="loadbox"><div><b>Workout training load</b><div class="muted">Minutes × session RPE</div></div><strong id="preview">225</strong></div>
+<div class="actions"><button class="btn primary" id="save">Save workout</button><button class="btn hidden" id="cancel">Cancel edit</button></div>
+<p class="muted">Rate the whole workout's difficulty, not the average RPE of individual sets. If you did lifting and cardio separately, log them as two sessions.</p>
+</section>
+
+<section class="panel">
+<h2>Workout history <span class="muted" id="count"></span></h2>
+<div class="grid2">
+<div><label for="filter">Show</label><select id="filter"><option value="All">All workouts</option><option>Weightlifting</option><option>Cardio</option></select></div>
+<div><label for="month">Jump to month</label><input id="month" type="month"></div>
+</div>
+<div id="history"></div>
+</section>
+
+<section class="panel">
+<h2>Training load trend</h2>
+<div class="muted">Daily load totals for the most recent 42 days in your history.</div>
+<div id="trend" style="margin-top:14px"></div>
+</section>
+
+<section class="panel">
+<h2>Backup & restore</h2>
+<div class="notice">Your workouts are saved automatically in this browser on this device. Use Export Backup regularly so you can restore your history if browser data is cleared or you change phones.</div>
+<div class="actions" style="margin-top:12px">
+<button class="btn" id="export">Export backup</button>
+<button class="btn" id="importBtn">Import backup</button>
+<input class="hidden" id="file" type="file" accept="application/json,.json">
+</div>
+<p class="muted" id="backupStatus" aria-live="polite">No backup exported yet.</p>
+</section>
+
+<section class="panel">
+<h2>How the numbers work</h2>
+<p class="muted"><b>Workout load:</b> duration in minutes × session RPE.</p>
+<p class="muted"><b>ATL:</b> exponentially weighted average using a 7-day time constant.</p>
+<p class="muted"><b>CTL:</b> exponentially weighted average using a 42-day time constant.</p>
+<p class="muted"><b>TSB:</b> CTL minus ATL. A negative value often means recent load is above your longer-term average; it is not a diagnosis or a stand-alone instruction to train or rest.</p>
+<p class="muted">Calculations include zero-load rest days. The tracker initializes the averages at zero 3 × 42 days before your earliest recorded workout, so entering older sessions can change the results.</p>
+</section>
+<footer class="muted" style="text-align:center;padding:12px">Training Load Tracker · Your data stays in this browser unless you export it.</footer>
+</main>
+<script>
+(()=>{
+const KEY='atl_ctl_tsb_workouts_v1';
+let workouts=[]; let editing=null;
+const $=id=>document.getElementById(id);
+const today=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)};
+$('date').value=today();
+function read(){try{const v=JSON.parse(localStorage.getItem(KEY)||'[]');workouts=Array.isArray(v)?v:[]}catch(e){workouts=[]}}
+function persist(){localStorage.setItem(KEY,JSON.stringify(workouts))}
+function loadFor(w){return Math.round(Number(w.duration)*Number(w.rpe))}
+function localDate(s){return new Date(s+'T12:00:00')}
+function fmt(n){return Math.round(n).toLocaleString()}
+function dailyTotals(){const o={};workouts.forEach(w=>o[w.date]=(o[w.date]||0)+loadFor(w));return o}
+function metrics(){
+ if(!workouts.length)return {atl:0,ctl:0,tsb:0,days:0};
+ const ds=workouts.map(w=>w.date).sort(); const daily=dailyTotals();
+ let d=localDate(ds[0]);d.setDate(d.getDate()-126);
+ const end=localDate(ds[ds.length-1]);let a=0,c=0,days=0;
+ while(d<=end){const k=d.toISOString().slice(0,10);const v=daily[k]||0;a+=(v-a)/7;c+=(v-c)/42;d.setDate(d.getDate()+1);days++}
+ return {atl:a,ctl:c,tsb:c-a,days};
+}
+function renderMetrics(){
+ const m=metrics();$('atl').textContent=fmt(m.atl);$('ctl').textContent=fmt(m.ctl);$('tsb').textContent=(m.tsb>0?'+':'')+fmt(m.tsb);
+ if(workouts.length){const ds=workouts.map(w=>w.date).sort();$('coverage').textContent=`${workouts.length} sessions · History from ${ds[0]} through ${ds[ds.length-1]}.`; }else $('coverage').textContent='Add your workouts to begin. Rest days are automatically counted as zero.';
+}
+function renderHistory(){
+ const f=$('filter').value,mo=$('month').value;
+ const list=[...workouts].filter(w=>(f==='All'||w.type===f)&&(!mo||w.date.startsWith(mo))).sort((a,b)=>b.date.localeCompare(a.date)||b.created-b.created);
+ $('count').textContent=`(${list.length})`;
+ const host=$('history');host.innerHTML='';
+ if(!list.length){host.innerHTML='<div class="empty">No workouts match this view yet.</div>';return}
+ const groups={};list.forEach(w=>(groups[w.date]??=[]).push(w));
+ Object.keys(groups).forEach(date=>{
+  const head=document.createElement('div');head.style.cssText='display:flex;justify-content:space-between;margin:14px 0 3px;font-weight:700';
+  const total=groups[date].reduce((s,w)=>s+loadFor(w),0);head.innerHTML=`<span>${date}</span><span>${fmt(total)} load</span>`;host.append(head);
+  groups[date].forEach(w=>{
+   const row=document.createElement('div');row.className='entry';
+   const info=document.createElement('div');info.className='entryInfo';
+   const b=document.createElement('b');b.textContent=w.type;
+   const sm=document.createElement('small');sm.textContent=`${w.duration} min · RPE ${Number(w.rpe).toFixed(1)}`;
+   info.append(b,sm);
+   const val=document.createElement('div');val.className='entryLoad';val.textContent=fmt(loadFor(w));
+   const edit=document.createElement('button');edit.className='btn mini';edit.textContent='Edit';edit.onclick=()=>startEdit(w.id);
+   const del=document.createElement('button');del.className='btn mini danger';del.textContent='Delete';del.onclick=()=>{if(confirm('Delete this workout?')){workouts=workouts.filter(x=>x.id!==w.id);persist();render()}};
+   row.append(info,val,edit,del);host.append(row);
+  });
+ });
+}
+function renderTrend(){
+ const daily=dailyTotals(), dates=workouts.map(w=>w.date).sort();const host=$('trend');host.innerHTML='';
+ if(!dates.length){host.innerHTML='<div class="empty">Your training-load bars will appear here.</div>';return}
+ let end=localDate(dates[dates.length-1]);let start=new Date(end);start.setDate(start.getDate()-41);
+ const vals=[];for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){const k=d.toISOString().slice(0,10);vals.push({date:k,v:daily[k]||0})}
+ const max=Math.max(1,...vals.map(x=>x.v));
+ vals.forEach(x=>{const wrap=document.createElement('div');wrap.style.cssText='display:grid;grid-template-columns:90px 1fr 42px;gap:8px;align-items:center;margin:7px 0;font-size:11px;color:var(--muted)';
+ const date=document.createElement('span');date.textContent=x.date.slice(5);const barwrap=document.createElement('div');barwrap.className='barwrap';const bar=document.createElement('div');bar.className='bar';bar.style.width=(x.v/max*100)+'%';barwrap.append(bar);const n=document.createElement('span');n.style.textAlign='right';n.textContent=x.v?fmt(x.v):'–';wrap.append(date,barwrap,n);host.append(wrap)});
+}
+function render(){renderMetrics();renderHistory();renderTrend();$('rpeValue').textContent=Number($('rpe').value).toFixed(1);$('preview').textContent=fmt((Number($('duration').value)||0)*Number($('rpe').value))}
+function resetForm(){editing=null;$('formTitle').textContent='Add a workout';$('save').textContent='Save workout';$('cancel').classList.add('hidden');$('date').value=today();$('kind').value='Weightlifting';$('duration').value='';$('rpe').value='5';render()}
+function startEdit(id){const w=workouts.find(x=>x.id===id);if(!w)return;editing=id;$('formTitle').textContent='Edit workout';$('save').textContent='Save changes';$('cancel').classList.remove('hidden');$('date').value=w.date;$('kind').value=w.type;$('duration').value=w.duration;$('rpe').value=w.rpe;render();window.scrollTo({top:0,behavior:'smooth'})}
+$('save').onclick=()=>{
+ const date=$('date').value,duration=Number($('duration').value),rpe=Number($('rpe').value);
+ if(!date||!Number.isFinite(duration)||duration<=0||!Number.isFinite(rpe)||rpe<1||rpe>10){alert('Enter a valid date, duration greater than zero, and RPE from 1 to 10.');return}
+ if(editing!==null){const w=workouts.find(x=>x.id===editing);Object.assign(w,{date,type:$('kind').value,duration,rpe})}
+ else workouts.push({id:(crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random())),date,type:$('kind').value,duration,rpe,created:Date.now()});
+ workouts.sort((a,b)=>a.date.localeCompare(b.date));persist();resetForm();
+};
+$('cancel').onclick=resetForm;
+$('rpe').oninput=render;$('duration').oninput=render;$('filter').onchange=renderHistory;$('month').onchange=renderHistory;
+$('export').onclick=()=>{
+ const blob=new Blob([JSON.stringify({app:'Training Load Tracker',version:1,exportedAt:new Date().toISOString(),workouts},null,2)],{type:'application/json'});
+ const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='training-load-backup-'+today()+'.json';document.body.append(a);a.click();a.remove();URL.revokeObjectURL(url);$('backupStatus').textContent='Backup exported. Keep the JSON file somewhere safe, such as iCloud Drive.';
+};
+$('importBtn').onclick=()=>$('file').click();
+$('file').onchange=async e=>{
+ const file=e.target.files[0];if(!file)return;
+ try{const data=JSON.parse(await file.text());const incoming=Array.isArray(data)?data:data.workouts;if(!Array.isArray(incoming))throw Error('No workout list found');
+ const valid=incoming.filter(w=>w&&typeof w.date==='string'&&Number(w.duration)>0&&Number(w.rpe)>=1&&Number(w.rpe)<=10&&['Weightlifting','Cardio'].includes(w.type));
+ if(!valid.length&&incoming.length)throw Error('No valid workout entries found');
+ if(!confirm(`Import ${valid.length} workouts? This will replace the workouts currently saved in this browser.`))return;
+ workouts=valid.map(w=>({...w,id:w.id||String(Date.now()+Math.random()),duration:Number(w.duration),rpe:Number(w.rpe),created:w.created||Date.now()}));persist();resetForm();$('backupStatus').textContent=`Imported ${valid.length} workouts.`; 
+ }catch(err){alert('Could not import that backup: '+err.message)}finally{$('file').value=''}
+};
+read();render();
+})();
+</script>
+</body>
+</html>
